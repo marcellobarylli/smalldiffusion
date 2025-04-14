@@ -10,34 +10,63 @@ from .model import (
     alpha, Attention, ModelMixin, CondSequential, SigmaEmbedderSinCos,
 )
 
+# Helper function to add coordinate channels
+def add_coords(input_tensor):
+    """Adds normalized coordinate channels to the input tensor."""
+    B, _, H, W = input_tensor.shape
+    yy = torch.arange(H, device=input_tensor.device, dtype=input_tensor.dtype).view(-1, 1).repeat(1, W)
+    xx = torch.arange(W, device=input_tensor.device, dtype=input_tensor.dtype).view(1, -1).repeat(H, 1)
+
+    yy = (yy / (H - 1 + 1e-6)) * 2 - 1 # Normalize to [-1, 1], add eps for H=1 or W=1
+    xx = (xx / (W - 1 + 1e-6)) * 2 - 1 # Normalize to [-1, 1], add eps for H=1 or W=1
+
+    coords = torch.stack([yy, xx], dim=0).unsqueeze(0).repeat(B, 1, 1, 1) # Shape: [B, 2, H, W]
+    return torch.cat([input_tensor, coords], dim=1) # Concatenate along channel dim
+
+class CoordConv2d(nn.Module):
+    """A Conv2d layer that optionally adds coordinate channels to the input."""
+    def __init__(self, in_channels, out_channels, use_coordconv=False, **kwargs):
+        super().__init__()
+        self.use_coordconv = use_coordconv
+        self.in_channels_actual = in_channels + 2 if use_coordconv else in_channels
+        self.conv = nn.Conv2d(self.in_channels_actual, out_channels, **kwargs)
+
+    def forward(self, x):
+        if self.use_coordconv:
+            x = add_coords(x)
+        return self.conv(x)
+
 def Normalize(ch):
     return torch.nn.GroupNorm(num_groups=32, num_channels=ch, eps=1e-6, affine=True)
 
-def Upsample(ch):
+def Upsample(ch, use_coordconv=False):
+    conv = CoordConv2d(ch, ch, kernel_size=3, stride=1, padding=1, use_coordconv=use_coordconv) 
     return nn.Sequential(
         nn.Upsample(scale_factor=2.0, mode='nearest'),
-        torch.nn.Conv2d(ch, ch, kernel_size=3, stride=1, padding=1),
+        conv,
     )
 
-def Downsample(ch):
+def Downsample(ch, use_coordconv=False):
+    conv = CoordConv2d(ch, ch, kernel_size=3, stride=2, padding=0, use_coordconv=use_coordconv)
     return nn.Sequential(
-        nn.ConstantPad2d((0, 1, 0, 1), 0),
-        torch.nn.Conv2d(ch, ch, kernel_size=3, stride=2, padding=0),
+        nn.ConstantPad2d((0, 1, 0, 1), 0), # Pad bottom/right for stride=2 conv
+        conv,
     )
 
 class ResnetBlock(nn.Module):
     def __init__(self, *, in_ch, out_ch=None, conv_shortcut=False,
-                 dropout, temb_channels=512):
+                 dropout, temb_channels=512, use_coordconv=False):
         super().__init__()
         self.in_ch = in_ch
         out_ch = in_ch if out_ch is None else out_ch
         self.out_ch = out_ch
         self.use_conv_shortcut = conv_shortcut
+        self.use_coordconv = use_coordconv
 
         self.layer1 = nn.Sequential(
             Normalize(in_ch),
             nn.SiLU(),
-            torch.nn.Conv2d(in_ch, out_ch, kernel_size=3, stride=1, padding=1),
+            CoordConv2d(in_ch, out_ch, kernel_size=3, stride=1, padding=1, use_coordconv=self.use_coordconv),
         )
         self.temb_proj = nn.Sequential(
             nn.SiLU(),
@@ -47,11 +76,18 @@ class ResnetBlock(nn.Module):
             Normalize(out_ch),
             nn.SiLU(),
             torch.nn.Dropout(dropout),
-            torch.nn.Conv2d(out_ch, out_ch, kernel_size=3, stride=1, padding=1),
+            CoordConv2d(out_ch, out_ch, kernel_size=3, stride=1, padding=1, use_coordconv=self.use_coordconv),
         )
         if self.in_ch != self.out_ch:
-            kernel_stride_padding = (3,1,1) if self.use_conv_shortcut else (1,1,0)
-            self.shortcut = torch.nn.Conv2d(in_ch, out_ch, *kernel_stride_padding)
+            if self.use_conv_shortcut:
+                kernel_size, stride, padding = 3, 1, 1
+            else:
+                kernel_size, stride, padding = 1, 1, 0
+            self.shortcut = CoordConv2d(in_ch, out_ch,
+                                        kernel_size=kernel_size,
+                                        stride=stride,
+                                        padding=padding,
+                                        use_coordconv=self.use_coordconv)
 
     def forward(self, x, temb):
         h = x
@@ -92,6 +128,7 @@ class Unet(nn.Module, ModelMixin):
                  resamp_with_conv = True,
                  sig_embed        = None,
                  cond_embed       = None,
+                 use_coordconv    = False,
                  ):
         super().__init__()
 
@@ -101,18 +138,19 @@ class Unet(nn.Module, ModelMixin):
         self.num_res_blocks = num_res_blocks
         self.input_dims = (in_ch, in_dim, in_dim)
         self.temb_ch = self.ch * embed_ch_mult
+        self.use_coordconv = use_coordconv
 
         # Embeddings
         self.sig_embed = sig_embed or SigmaEmbedderSinCos(self.temb_ch)
         make_block = lambda in_ch, out_ch: ResnetBlock(
-            in_ch=in_ch, out_ch=out_ch, temb_channels=self.temb_ch, dropout=dropout
+            in_ch=in_ch, out_ch=out_ch, temb_channels=self.temb_ch, dropout=dropout, use_coordconv=self.use_coordconv
         )
         self.cond_embed = cond_embed
 
         # Downsampling
         curr_res = in_dim
         in_ch_dim = [ch * m for m in (1,)+ch_mult]
-        self.conv_in = torch.nn.Conv2d(in_ch, self.ch, kernel_size=3, stride=1, padding=1)
+        self.conv_in = CoordConv2d(in_ch, self.ch, kernel_size=3, stride=1, padding=1, use_coordconv=self.use_coordconv)
         self.downs = nn.ModuleList()
         for i, (block_in, block_out) in enumerate(pairwise(in_ch_dim)):
             down = nn.Module()
@@ -124,7 +162,7 @@ class Unet(nn.Module, ModelMixin):
                 down.blocks.append(CondSequential(*block))
                 block_in = block_out
             if i < self.num_resolutions - 1: # Not last iter
-                down.downsample = Downsample(block_in)
+                down.downsample = Downsample(block_in, use_coordconv=self.use_coordconv)
                 curr_res = curr_res // 2
             self.downs.append(down)
 
@@ -150,7 +188,7 @@ class Unet(nn.Module, ModelMixin):
                 up.blocks.append(CondSequential(*block))
                 block_in = block_out
             if i_level < self.num_resolutions - 1: # Not last iter
-                up.upsample = Upsample(block_in)
+                up.upsample = Upsample(block_in, use_coordconv=self.use_coordconv)
                 curr_res = curr_res * 2
             self.ups.append(up)
 
@@ -158,7 +196,7 @@ class Unet(nn.Module, ModelMixin):
         self.out_layer = nn.Sequential(
             Normalize(block_in),
             nn.SiLU(),
-            torch.nn.Conv2d(block_in, out_ch, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(block_in, out_ch, kernel_size=3, stride=1, padding=1),
         )
 
     def forward(self, x, sigma, cond=None):

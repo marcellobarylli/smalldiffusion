@@ -1,0 +1,1 @@
+{"_timestamp":1.744443351604689e+09,"_runtime":465.388796466,"_step":19,"_wandb":{"runtime":465},"epoch":20,"train_loss_epoch_avg":0.03716608329579748,"quadrant_mse_ema":0.0003673953178804368}

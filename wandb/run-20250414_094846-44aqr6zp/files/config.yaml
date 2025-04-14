@@ -1,0 +1,48 @@
+_wandb:
+    value:
+        cli_version: 0.19.9
+        m: []
+        python_version: 3.10.16
+        t:
+            "1":
+                - 1
+                - 41
+                - 49
+                - 55
+                - 71
+            "2":
+                - 1
+                - 41
+                - 49
+                - 55
+                - 71
+            "3":
+                - 2
+                - 13
+                - 16
+                - 23
+                - 55
+            "4": 3.10.16
+            "5": 0.19.9
+            "8":
+                - 5
+            "12": 0.19.9
+            "13": linux-x86_64
+coordconv_mode:
+    value: minimal
+epochs:
+    value: 20
+load_checkpoint:
+    value: models/mnist_unet_coordconv_checkpoint.pth
+lr:
+    value: 0.0007
+model_save_dir:
+    value: models
+sample_batch_size:
+    value: 64
+sample_save_dir:
+    value: imgs
+save_every_epochs:
+    value: 5
+train_batch_size:
+    value: 1024

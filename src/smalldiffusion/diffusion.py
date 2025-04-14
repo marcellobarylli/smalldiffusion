@@ -102,15 +102,21 @@ def training_loop(loader      : DataLoader,
     accelerator = accelerator or Accelerator()
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
     model, optimizer, loader = accelerator.prepare(model, optimizer, loader)
-    for _ in (pbar := tqdm(range(epochs))):
+    for epoch_idx in range(epochs):
         for x0 in loader:
             model.train()
             optimizer.zero_grad()
             x0, sigma, eps, cond = generate_train_sample(x0, schedule, conditional)
             loss = model.get_loss(x0, sigma, eps, cond=cond)
-            yield SimpleNamespace(**locals()) # For extracting training statistics
+            stats_dict = locals()
+            stats_dict['current_epoch'] = epoch_idx 
+            yield SimpleNamespace(**stats_dict) # For extracting training statistics
             accelerator.backward(loss)
             optimizer.step()
+            # EMA update should happen after optimizer step, if EMA is used
+            # We need to pass EMA object to training_loop or handle it externally.
+            # For now, let's assume EMA is handled externally by the caller loop.
+            # Consider adding EMA as an optional argument to training_loop later if needed.
 
 # Generalizes most commonly-used samplers:
 #   DDPM       : gam=1, mu=0.5

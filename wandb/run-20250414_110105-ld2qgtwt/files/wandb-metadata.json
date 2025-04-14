@@ -1,0 +1,70 @@
+{
+  "os": "Linux-5.15.0-131-generic-x86_64-with-glibc2.35",
+  "python": "CPython 3.10.16",
+  "startedAt": "2025-04-14T11:01:05.638903Z",
+  "args": [
+    "--load_checkpoint",
+    "models/mnist_unet_coordconv_checkpoint.pth",
+    "--coordconv_mode",
+    "maximal",
+    "--epochs",
+    "20",
+    "--save_every_epochs",
+    "5"
+  ],
+  "program": "/home/marcello/workspace/smalldiffusion/training/mnist_unet.py",
+  "codePath": "training/mnist_unet.py",
+  "git": {
+    "remote": "git@github.com:marcellobarylli/smalldiffusion.git",
+    "commit": "e97b88fdd6354b5834f8e4886f8adc721bd22fac"
+  },
+  "email": "marcello.barylli@gmail.com",
+  "root": "/home/marcello/workspace/smalldiffusion",
+  "host": "vaporwave",
+  "executable": "/home/marcello/miniconda3/envs/pupdiff/bin/python",
+  "codePathLocal": "training/mnist_unet.py",
+  "cpu_count": 16,
+  "cpu_count_logical": 32,
+  "gpu": "NVIDIA RTX A6000",
+  "gpu_count": 4,
+  "disk": {
+    "/": {
+      "total": "1887990521856",
+      "used": "1043271331840"
+    }
+  },
+  "memory": {
+    "total": "405230084096"
+  },
+  "cpu": {
+    "count": 16,
+    "countLogical": 32
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA RTX A6000",
+      "memoryTotal": "51527024640",
+      "cudaCores": 10752,
+      "architecture": "Ampere"
+    },
+    {
+      "name": "NVIDIA RTX A6000",
+      "memoryTotal": "51527024640",
+      "cudaCores": 10752,
+      "architecture": "Ampere"
+    },
+    {
+      "name": "NVIDIA RTX A6000",
+      "memoryTotal": "51527024640",
+      "cudaCores": 10752,
+      "architecture": "Ampere"
+    },
+    {
+      "name": "NVIDIA RTX A6000",
+      "memoryTotal": "51527024640",
+      "cudaCores": 10752,
+      "architecture": "Ampere"
+    }
+  ],
+  "cudaVersion": "12.5"
+}
