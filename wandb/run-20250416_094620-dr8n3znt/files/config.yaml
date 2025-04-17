@@ -1,0 +1,87 @@
+_wandb:
+    value:
+        cli_version: 0.19.9
+        m: []
+        python_version: 3.10.16
+        t:
+            "1":
+                - 1
+                - 41
+                - 49
+                - 55
+                - 71
+            "2":
+                - 1
+                - 41
+                - 49
+                - 55
+                - 71
+            "3":
+                - 13
+                - 23
+                - 55
+                - 61
+            "4": 3.10.16
+            "5": 0.19.9
+            "8":
+                - 5
+            "12": 0.19.9
+            "13": linux-x86_64
+attn_resolutions:
+    value: "14"
+channel_mult:
+    value: 1,1,2
+checkpoint_name:
+    value: mnist_unet_siren_cond.pth
+dropout:
+    value: 0.1
+ema_decay:
+    value: 0.999
+epochs:
+    value: 100
+image_size:
+    value: 28
+latent_dim:
+    value: 64
+load_checkpoint:
+    value: null
+lr:
+    value: 0.0001
+model_channels:
+    value: 64
+model_save_dir:
+    value: models
+num_res_blocks:
+    value: 2
+num_steps:
+    value: 800
+sample_batch_size:
+    value: 64
+sample_save_dir:
+    value: samples
+save_every_epochs:
+    value: 20
+save_samples_epoch:
+    value: 10
+sigma_max:
+    value: 20
+sigma_min:
+    value: 0.01
+siren_checkpoint_path:
+    value: models/siren_autoencoder.pth
+siren_features:
+    value: 64,64,64
+siren_use_scales:
+    value: true
+siren_use_shifts:
+    value: true
+siren_w:
+    value: 1
+siren_w0:
+    value: 30
+train_batch_size:
+    value: 128
+use_wandb:
+    value: true
+wandb_project:
+    value: smalldiffusion-siren-cond

@@ -67,7 +67,12 @@ def alpha(sigma):
 # Scale model input so that its norm stays constant for all sigma
 def Scaled(cls: ModelMixin):
     def forward(self, x, sigma, cond=None):
-        return cls.forward(self, x * alpha(sigma).sqrt(), sigma, cond=cond)
+        # Reshape sigma for broadcasting with x
+        alpha_sqrt = alpha(sigma).sqrt()
+        while len(alpha_sqrt.shape) < len(x.shape):
+            alpha_sqrt = alpha_sqrt.unsqueeze(-1)
+        # return cls.forward(self, x * alpha(sigma).sqrt(), sigma, cond=cond)
+        return cls.forward(self, x * alpha_sqrt, sigma, cond=cond)
     return type(cls.__name__ + 'Scaled', (cls,), dict(forward=forward))
 
 # Train model to predict x0 instead of eps

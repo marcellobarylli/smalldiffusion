@@ -1,0 +1,64 @@
+_wandb:
+    value:
+        cli_version: 0.19.9
+        m: []
+        python_version: 3.10.16
+        t:
+            "1":
+                - 1
+                - 41
+                - 49
+                - 55
+                - 71
+            "2":
+                - 1
+                - 41
+                - 49
+                - 55
+                - 71
+            "3":
+                - 2
+                - 13
+                - 23
+                - 55
+                - 61
+            "4": 3.10.16
+            "5": 0.19.9
+            "8":
+                - 5
+            "12": 0.19.9
+            "13": linux-x86_64
+checkpoint_name:
+    value: siren_autoencoder.pth
+ema_decay:
+    value: 0.999
+epochs:
+    value: 500
+latent_dim:
+    value: 64
+lr:
+    value: 0.0001
+model_save_dir:
+    value: models
+save_every_epochs:
+    value: 10
+save_reconstruction_epoch:
+    value: 5
+siren_features:
+    value: 64,64,64
+siren_use_scales:
+    value: true
+siren_use_shifts:
+    value: false
+siren_w:
+    value: 30
+siren_w0:
+    value: 30
+train_batch_size:
+    value: 64
+use_wandb:
+    value: true
+wandb_project:
+    value: siren-autoencoder-train
+wandb_run_name:
+    value: siren-ae-run
